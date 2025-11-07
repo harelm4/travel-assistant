@@ -5,7 +5,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { TravelAssistantService } from './services/travelAssistantService.js';
-const { createProxyMiddleware } = require('http-proxy-middleware');
+
 
 // Load environment variables
 dotenv.config();
@@ -16,23 +16,6 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 
-
-const proxyOptions = {
-  target: process.env.OLLAMA_BASE_URL, // Target: local Ollama instance
-  changeOrigin: true,
-  onProxyReq: (proxyReq, req, res) => {
-    // Inject the Origin header required by Ollama
-    proxyReq.setHeader('Origin', 'https://bushido-academy.up.railway.app');
-  },
-  logLevel: 'debug'
-};
-
-// Use '/' so that all requests are forwarded directly to the target
-app.use('/', createProxyMiddleware(proxyOptions));
-
-app.listen(PORT, () => {
-  console.log(`Proxy running on port ${PORT}. Redirecting to ${process.env.OLLAMA_BASE_URL}`);
-});
 
 // CORS middleware (allow all origins for testing)
 // app.use((req, res, next) => {
@@ -69,10 +52,8 @@ const travelAssistant = new TravelAssistantService({
 });
 
 // Routes
-/**
- * GET /api/health - Health check
- */
-app.get('/llm/health-check', async (req, res) => {
+
+app.get('/health-check', async (req, res) => {
   try {
     const health = await travelAssistant.healthCheck();
     res.status(health.status === 'healthy' ? 200 : 503).json(health);
@@ -85,9 +66,7 @@ app.get('/llm/health-check', async (req, res) => {
   }
 });
 
-/**
- * POST /api/conversations - Start a new conversation
- */
+
 app.post('/api/conversations', (req, res) => {
   try {
     const { userId } = req.body;
@@ -101,9 +80,7 @@ app.post('/api/conversations', (req, res) => {
   }
 });
 
-/**
- * POST /api/conversations/:id/messages - Send a message
- */
+
 app.post('/api/conversations/:id/messages', async (req, res) => {
   try {
     const { id } = req.params;
@@ -136,9 +113,7 @@ app.post('/api/conversations/:id/messages', async (req, res) => {
   }
 });
 
-/**
- * GET /api/conversations/:id - Get conversation history
- */
+
 app.get('/api/conversations/:id', (req, res) => {
   try {
     const { id } = req.params;
@@ -159,9 +134,7 @@ app.get('/api/conversations/:id', (req, res) => {
   }
 });
 
-/**
- * POST /api/conversations/:id/reset - Clear conversation history but keep ID
- */
+
 app.post('/api/conversations/:id/reset', (req, res) => {
   try {
     const { id } = req.params;
@@ -236,6 +209,7 @@ app.use((req, res) => {
     message: `Route ${req.method} ${req.path} not found`,
   });
 });
+
 
 // Start server
 app.listen(PORT, () => {

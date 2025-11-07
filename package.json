@@ -6,15 +6,24 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "nodemon --watch src/server.js"
   },
-  "keywords": ["travel", "ai", "llm", "api", "assistant"],
+  "keywords": [
+    "travel",
+    "ai",
+    "llm",
+    "api",
+    "assistant"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
     "axios": "^1.6.2",
     "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }
