@@ -56,7 +56,7 @@ const travelAssistant = new TravelAssistantService({
 app.get('/health-check', async (req, res) => {
   try {
     const health = await travelAssistant.healthCheck();
-    res.status(health.status === 'healthy' ? 200 : 503).json(health);
+    res.status(health.llm.available ? 200 : 503).json(health);
   } catch (error) {
     res.status(503).json({
       status: 'unhealthy',
@@ -92,6 +92,14 @@ app.post('/api/conversations/:id/messages', async (req, res) => {
         message: 'Message is required and must be a non-empty string',
       });
     }
+    const health = await travelAssistant.healthCheck();
+    if (!health.llm.available) {
+      return res.status(503).json({
+        error: 'LLM service unavailable',
+        message: health.message,
+      });
+    }
+    
 
     const result = await travelAssistant.chat(id, message);
     res.json(result);
@@ -166,9 +174,7 @@ app.post('/api/conversations/:id/reset', (req, res) => {
   }
 });
 
-/**
- * DELETE /api/conversations/:id - Delete a conversation
- */
+
 app.delete('/api/conversations/:id', (req, res) => {
   try {
     const { id } = req.params;

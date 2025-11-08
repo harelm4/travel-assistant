@@ -1,13 +1,23 @@
-import { v4 as uuidv4 } from 'uuid';
+import e from 'express';
+import { nanoid } from 'nanoid';
+
 
 export class ConversationManager {
   constructor() {
     this.conversations = new Map();
-    this.maxHistoryLength = 20; // Keep last 20 messages
+    this.createConversation('testing-user');
+    this.maxHistoryLength = 20;
   }
 
   createConversation(userId = 'anonymous') {
-    const conversationId = uuidv4();
+    let conversationId
+    if (userId=='testing-user'){
+      conversationId = 'testing';
+      
+    }
+    else{
+      conversationId = nanoid();
+    }
     const conversation = {
       id: conversationId,
       userId: userId,

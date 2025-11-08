@@ -8,10 +8,6 @@ export class ExternalAPIService {
     this.countriesBaseUrl = 'https://restcountries.com/v3.1';
   }
 
-  /**
-   * Get current weather for a location
-   * @param {string} location - City name or "city,country"
-   */
   async getWeather(location) {
     if (!this.weatherApiKey) {
       console.warn('Weather API key not configured');
@@ -45,9 +41,6 @@ export class ExternalAPIService {
     }
   }
 
-  /**
-   * Get weather forecast for a location (5 day / 3 hour)
-   */
   async getWeatherForecast(location) {
     if (!this.weatherApiKey) {
       return null;
@@ -59,7 +52,7 @@ export class ExternalAPIService {
           q: location,
           appid: this.weatherApiKey,
           units: 'metric',
-          cnt: 8, // Next 24 hours (8 * 3 hour intervals)
+          cnt: 8, 
         },
         timeout: 5000,
       });
@@ -68,7 +61,7 @@ export class ExternalAPIService {
         time: item.dt_txt,
         temp: Math.round(item.main.temp),
         description: item.weather[0].description,
-        pop: Math.round(item.pop * 100), // Probability of precipitation
+        pop: Math.round(item.pop * 100),
       }));
 
       return {
@@ -81,10 +74,6 @@ export class ExternalAPIService {
     }
   }
 
-  /**
-   * Get country information
-   * @param {string} countryName - Name of the country
-   */
   async getCountryInfo(countryName) {
     try {
       const response = await axios.get(
@@ -92,7 +81,7 @@ export class ExternalAPIService {
         { timeout: 5000 }
       );
 
-      const data = response.data[0]; // Take first match
+      const data = response.data[0];
       return {
         name: data.name.common,
         officialName: data.name.official,
@@ -113,9 +102,6 @@ export class ExternalAPIService {
     }
   }
 
-  /**
-   * Get country by capital city
-   */
   async getCountryByCapital(capital) {
     try {
       const response = await axios.get(
@@ -131,9 +117,6 @@ export class ExternalAPIService {
     }
   }
 
-  /**
-   * Helper to format country data consistently
-   */
   _formatCountryData(data) {
     return {
       name: data.name.common,
@@ -149,11 +132,7 @@ export class ExternalAPIService {
     };
   }
 
-  /**
-   * Determine if external data should be fetched based on query
-   * Returns object with flags for what data to fetch
-   */
-  static shouldFetchData(query, queryType) {
+  static shouldFetchExternalData(query, queryType) {
     const lowerQuery = query.toLowerCase();
     
     return {
@@ -174,27 +153,24 @@ export class ExternalAPIService {
     };
   }
 
-  /**
-   * Extract location from query using simple pattern matching
-   * This is a heuristic approach - in production, consider using NER
-   */
-  static extractLocation(query) {
-    // Common patterns: "in Paris", "to Tokyo", "visit Rome"
-    const patterns = [
-      /\b(?:in|to|visit|visiting|going to|traveling to|at)\s+([A-Z][a-zA-Z\s]+?)(?:\s|,|\.|\?|$)/,
-      /\b([A-Z][a-zA-Z\s]+?)(?:\s+weather|\s+climate)/,
-      /\bfor\s+([A-Z][a-zA-Z\s]+?)(?:\s+trip|\s+vacation)/,
-    ];
+static extractLocation(query) {
+  // Make the query case-insensitive and more flexible
+  const patterns = [
+    /\bin\s+([a-zA-Z\s]+?)(?:\s|,|\.|\?|$)/i, // matches "in london", "in new york"
+    /(?:weather|climate)\s+(?:in\s+)?([a-zA-Z\s]+?)(?:\s|,|\.|\?|$)/i, // matches "weather in london", "climate in tokyo"
+    /\bto\s+([a-zA-Z\s]+?)(?:\s|,|\.|\?|$)/i, // matches "to paris"
+    /\bfor\s+([a-zA-Z\s]+?)(?:\s+trip|\s+vacation)/i, // matches "for italy trip"
+  ];
 
-    for (const pattern of patterns) {
-      const match = query.match(pattern);
-      if (match && match[1]) {
-        return match[1].trim();
-      }
+  for (const pattern of patterns) {
+    const match = query.match(pattern);
+    if (match && match[1]) {
+      return match[1].trim();
     }
-
-    return null;
   }
+
+  return null;
+}
 }
 
 export default ExternalAPIService;

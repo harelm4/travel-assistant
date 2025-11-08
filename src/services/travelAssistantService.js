@@ -25,16 +25,13 @@ export class TravelAssistantService {
       this.conversationManager.extractAndStoreContext(conversationId, userMessage);
       this.conversationManager.addMessage(conversationId, 'user', userMessage);
 
-      // Classify the query type
       const queryType = PromptEngineer.classifyQuery(userMessage);
 
-      // Determine if we need external data
-      const dataNeeds = ExternalAPIService.shouldFetchData(userMessage, queryType);
+      const dataNeeds = ExternalAPIService.shouldFetchExternalData(userMessage, queryType);
       const externalData = await this.fetchExternalData(userMessage, dataNeeds, conversation);
 
-      // Build the prompt
       const conversationHistory = this.conversationManager.getFormattedHistory(conversationId)
-        .filter(m => m.role !== 'system'); // Exclude system messages from history
+        .filter(m => m.role !== 'system');
       
       const userPreferences = {
         ...conversation.context.userPreferences,
@@ -42,23 +39,20 @@ export class TravelAssistantService {
       };
 
       const userPrompt = PromptEngineer.buildPrompt(userMessage, queryType, {
-        conversationHistory: conversationHistory.slice(0, -1), // Exclude current message
+        conversationHistory: conversationHistory.slice(0, -1),
         externalData: externalData,
         userPreferences: userPreferences,
       });
 
-      // Generate response with retry logic
-      let response = await this.generateWithRetry(conversationId, userPrompt);
+      let response = await this.generateChatResponseWithRetry(conversationId, userPrompt);
 
-      // Check for hallucinations or poor responses
       const validated = await this.validateResponse(response, externalData);
-      if (!validated.ok && validated.retry) {
+      if (validated.retry) {
         console.log('Response validation failed, retrying with error recovery prompt');
-        const recoveryPrompt = PromptEngineer.getErrorRecoveryPrompt(userMessage, response);
-        response = await this.generateWithRetry(conversationId, recoveryPrompt);
+        const recoveryPrompt = PromptEngineer.getErrorRecoveryPrompt(userMessage, response,validated.issues);
+        response = await this.generateChatResponseWithRetry(conversationId, recoveryPrompt);
       }
 
-      // Add assistant response to conversation
       this.conversationManager.addMessage(conversationId, 'assistant', response, {
         queryType: queryType,
         externalDataUsed: Object.keys(externalData).length > 0,
@@ -78,25 +72,22 @@ export class TravelAssistantService {
     }
   }
 
-  /**
-   * Generate LLM response with retry logic
-   */
-  async generateWithRetry(conversationId, userPrompt, attempt = 0) {
+
+  async generateChatResponseWithRetry(conversationId, userPrompt, attempt = 0) {
+    // sometimes LLM calls fail due to technical issues on the model side, therefore we need a retry mechanism
     try {
       const systemPrompt = PromptEngineer.getSystemPrompt();
       const conversationHistory = this.conversationManager.getFormattedHistory(conversationId);
       
-      // Build messages array for LLM
       const messages = [
         { role: 'system', content: systemPrompt },
         ...conversationHistory.filter(m => m.role !== 'system'),
         { role: 'user', content: userPrompt },
       ];
 
-      // Remove duplicate consecutive messages
-      const dedupedMessages = this.deduplicateMessages(messages);
+      const uniqueMessages = this.removeDuplicateMessages(messages);
 
-      const result = await this.llmService.generateChatResponse(dedupedMessages, {
+      const result = await this.llmService.generateChatResponse(uniqueMessages, {
         temperature: 0.7,
         max_tokens: 1000,
       });
@@ -105,30 +96,36 @@ export class TravelAssistantService {
 
     } catch (error) {
       if (attempt < this.maxRetries) {
-        console.log(`Retry attempt ${attempt + 1}/${this.maxRetries}`);
-        await this.delay(1000 * (attempt + 1)); // Exponential backoff
-        return this.generateWithRetry(conversationId, userPrompt, attempt + 1);
+        console.log(`Retry attempt ${attempt + 1}/${this.maxRetries} : ${error.message}`);
+        await this.delay(1000 * (attempt + 1)); 
+        return this.generateChatResponseWithRetry(conversationId, userPrompt, attempt + 1);
       }
       throw error;
     }
   }
+  async getLocation(query) {
+    // another way to extract data from query is to just ask the LLM to do it - risky but sometimes effective
+    try {
+      const locationPrompt = PromptEngineer.getLocationExtractionPrompt(query);
+      const locationMessages = [{ role: 'user', content: locationPrompt }];
+      const location = (await this.llmService.generateChatResponse(locationMessages)).content;
+      return location.includes('UNKNOWN') ? null : location;
+    } catch (error) {
+      console.error('Error extracting location:', error.message);
+      return null;
+    }
+  }
 
-  /**
-   * Fetch external data based on query needs
-   */
   async fetchExternalData(query, dataNeeds, conversation) {
     const externalData = {};
+    const location = await this.getLocation(query);
 
-    // Extract location from query or conversation context
-    const location = ExternalAPIService.extractLocation(query) || 
-                     conversation.context.extractedInfo.destinations?.[conversation.context.extractedInfo.destinations.length - 1];
 
     if (!location) {
-      return externalData; // No location found, can't fetch data
+      return externalData; 
     }
 
     try {
-      // Fetch weather data if needed
       if (dataNeeds.weather) {
         const weather = await this.externalAPIService.getWeather(location);
         if (weather) {
@@ -136,7 +133,6 @@ export class TravelAssistantService {
         }
       }
 
-      // Fetch country data if needed
       if (dataNeeds.country) {
         const country = await this.externalAPIService.getCountryInfo(location);
         if (country) {
@@ -145,35 +141,27 @@ export class TravelAssistantService {
       }
     } catch (error) {
       console.error('Error fetching external data:', error.message);
-      // Continue without external data rather than failing
     }
 
     return externalData;
   }
 
-  /**
-   * Validate LLM response for quality and accuracy
-   */
   async validateResponse(response, externalData) {
-    // Basic validation checks
     const checks = {
-      ok: true,
       retry: false,
       issues: [],
     };
 
     // Check if response is too short (likely incomplete)
     if (response.length < 50) {
-      checks.ok = false;
       checks.retry = true;
       checks.issues.push('Response too short');
       return checks;
     }
 
-    // Check if response is just repeating the question
+    // Check if response is just repeating the question - often happens when the model is confused
     if (response.toLowerCase().includes('your question') || 
         response.toLowerCase().includes('you asked')) {
-      checks.ok = false;
       checks.retry = true;
       checks.issues.push('Response is meta-commentary');
       return checks;
@@ -181,9 +169,9 @@ export class TravelAssistantService {
 
     // Check for common hallucination patterns
     const hallucinationPatterns = [
-      /according to my database/i,
-      /as of my last update/i,
-      /I have access to/i,
+      /I think/i,
+      /probably/i,
+      /it might be/i,
     ];
 
     for (const pattern of hallucinationPatterns) {
@@ -196,10 +184,7 @@ export class TravelAssistantService {
     return checks;
   }
 
-  /**
-   * Remove duplicate consecutive messages
-   */
-  deduplicateMessages(messages) {
+  removeDuplicateMessages(messages) {
     const deduped = [];
     let lastContent = null;
 
@@ -213,9 +198,6 @@ export class TravelAssistantService {
     return deduped;
   }
 
-  /**
-   * Start a new conversation
-   */
   startConversation(userId = 'anonymous') {
     const conversationId = this.conversationManager.createConversation(userId);
     
@@ -229,9 +211,6 @@ export class TravelAssistantService {
     };
   }
 
-  /**
-   * Get conversation history
-   */
   getConversationHistory(conversationId) {
     const conversation = this.conversationManager.getConversation(conversationId);
     if (!conversation) {
@@ -247,9 +226,6 @@ export class TravelAssistantService {
     };
   }
 
-  /**
-   * Health check for all services
-   */
   async healthCheck() {
     const llmHealth = await this.llmService.healthCheck();
     const stats = this.conversationManager.getStats();
@@ -261,9 +237,6 @@ export class TravelAssistantService {
     };
   }
 
-  /**
-   * Utility delay function
-   */
   delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
