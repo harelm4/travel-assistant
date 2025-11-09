@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- **Node.js** 18+ (for native ES modules and watch mode)
+- **Node.js** 18+ 
 - **Ollama** instance running on your local.
 - **Angular** so you can serve the UI locally
 - **Optional**: OpenWeather API key for weather data (free tier available)
