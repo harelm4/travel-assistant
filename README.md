@@ -1,4 +1,4 @@
-# Travel Assistant APP
+# Travel Assistant App
 
 ## Requirements
 
