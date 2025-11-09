@@ -69,9 +69,9 @@ Conversation history is preserved and shown in the UI, allowing follow-up questi
 
 ### 3. Chain of thought
 when the user asks for destination recommendations or complex travel advice, your prompt templates guide the LLM to:
-Consider user preferences and constraints.
-Think through possible options.
-Explain the reasoning process before giving a final answer.
+- Consider user preferences and constraints.
+- Think through possible options.
+- Explain the reasoning process before giving a final answer.
 
 ### 4. Modern stack
 Uses Node.js, Angular, and Ollama.
