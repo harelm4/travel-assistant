@@ -1,23 +1,18 @@
-/**
- * Express REST API for Travel Assistant
- */
-
 import express from 'express';
 import dotenv from 'dotenv';
 import { TravelAssistantService } from './services/travelAssistantService.js';
 
 
-// Load environment variables
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+
 app.use(express.json());
 
 
-// CORS middleware (allow all origins for testing)
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -30,13 +25,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Request logging middleware
+
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
-// Initialize Travel Assistant Service
+
 const travelAssistant = new TravelAssistantService({
   llm: {
     provider: process.env.LLM_PROVIDER || 'ollama',
@@ -154,7 +149,7 @@ app.post('/api/conversations/:id/reset', (req, res) => {
       });
     }
 
-    // Clear messages except system prompt
+
     conversation.messages = conversation.messages.filter(m => m.role === 'system');
     conversation.context = {
       userPreferences: {},
@@ -199,7 +194,7 @@ app.delete('/api/conversations/:id', (req, res) => {
   }
 });
 
-// Error handling middleware
+
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({
@@ -208,7 +203,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
+
 app.use((req, res) => {
   res.status(404).json({
     error: 'Not found',
@@ -221,12 +216,6 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`Travel Assistant API is running!`);
   console.log(`URL: http://localhost:${PORT}`);
-  // console.log(`\n📚 API Endpoints:`);
-  // console.log(`   GET  / - API information`);
-  // console.log(`   GET  /api/health - Health check`);
-  // console.log(`   POST /api/conversations - Start new conversation`);
-  // console.log(`   POST /api/conversations/:id/messages - Send message`);
-  // console.log(`   GET  /api/conversations/:id - Get history`);
 });
 
 export default app;
