@@ -1,0 +1,28 @@
+<div class="ta-container">
+  <h2 class="ta-title">Travel Assistant</h2>
+  <div class="ta-conv-section">
+    <ul class="ta-conv-list">
+      <li *ngFor="let c of conversations" class="ta-conv-item">
+        <button (click)="del(c)" class="ta-del">Delete</button>
+      </li>
+    </ul>
+  </div>
+  <div *ngIf="messages.length" class="ta-current-msg">
+    <div class="ta-msg-box" *ngFor="let m of messages">
+  <span [ngClass]="m.role==='user' ? 'ta-user' : 'ta-assistant'">{{m.role}}:</span>
+  <div >{{m.content}}</div>
+
+  
+    </div>
+  </div>
+  <form #f="ngForm" (ngSubmit)="send()" class="ta-form">
+    <input [(ngModel)]="msg" name="msg" required placeholder="Ask anything..." class="ta-input">
+    <button type="submit" [disabled]="loading || !msg.trim()" class="ta-send">Send</button>
+    <button type="button" (click)="reset()" class="ta-reset">Reset</button>
+  </form>
+  <div *ngIf="loading" class="ta-loading">Loading...</div>
+  <div style="display:flex;align-items:center;gap:0.5rem;margin-top:1.5rem">
+    <input [(ngModel)]="conversationId" #convIdInput placeholder="Conversation ID" class="conversationId-input" style="flex:1">
+    <button type="button" (click)="loadMessages(conversationId)" class="ta-send" style="padding:0.5rem 1rem;">Load Conversation</button>
+  </div>
+</div>

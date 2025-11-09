@@ -1,0 +1,128 @@
+.ta-container {
+  max-width: 480px;
+  margin: 3rem auto;
+  padding: 2rem 2.5rem;
+  background: #fff;
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 32px #0001;
+  font-family: sans-serif;
+}
+.ta-title {
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: -1px;
+  margin-bottom: 2rem;
+  color: #222;
+}
+.ta-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.ta-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 2rem;
+  border: 1px solid #eee;
+  font-size: 1rem;
+  outline: none;
+  box-shadow: 0 1px 4px #0001;
+}
+.conversationId-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 2rem;
+  border: 1px solid #eee;
+  width: 80%;
+  font-size: 12px;
+  outline: none;
+  box-shadow: 0 1px 4px #0001;
+}
+.ta-send {
+  padding: 0.75rem 1.5rem;
+  border-radius: 2rem;
+  border: none;
+  background: #4f8cff;
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+  transition: .2s;
+}
+.ta-reset {
+  padding: 0.75rem 1.2rem;
+  border-radius: 2rem;
+  border: none;
+  background: #eee;
+  color: #333;
+  font-weight: 500;
+  cursor: pointer;
+  transition: .2s;
+}
+.ta-loading {
+  text-align: center;
+  color: #888;
+  margin-bottom: 1rem;
+}
+.ta-current-msg {
+  margin-bottom: 1.5rem;
+}
+.ta-msg-box {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f7f9fa;
+  border-radius: 1rem;
+  box-shadow: 0 1px 4px #0001;
+  font-size: 12px;
+}
+.ta-user {
+  color: #4f8cff;
+  font-weight: 500;
+}
+.ta-assistant {
+  color: #222;
+  font-weight: 600;
+}
+.ta-conv-section {
+  margin-top: 1.5rem;
+}
+.ta-toggle {
+  background: none;
+  border: none;
+  color: #4f8cff;
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+.ta-full-conv {
+  margin-bottom: 1.5rem;
+}
+.ta-msg-row {
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.ta-conv-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.ta-conv-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+.ta-conv-id {
+  flex: 1;
+  overflow-x: auto;
+}
+.ta-del {
+  background: #ff4f4f;
+  border: none;
+  color: #fff;
+  padding: 0.2rem 0.8rem;
+  border-radius: 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
